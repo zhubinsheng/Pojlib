@@ -198,8 +198,8 @@ public class JREUtils {
         List<String> userArgs = getJavaArgs(activity);
 
         //Add automatically generated args
-        userArgs.add("-Xms" + 2048 + "M");
-        userArgs.add("-Xmx" + 2048 + "M");
+        userArgs.add("-Xms" + 4072 + "M");
+        userArgs.add("-Xmx" + 4072 + "M");
         userArgs.add("-Dorg.lwjgl.opengl.libname=" + graphicsLib);
         userArgs.add("-Dorg.lwjgl.opengles.libname=" + "/system/lib64/libGLESv3.so");
         userArgs.add("-Dorg.lwjgl.egl.libname=" + "/system/lib64/libEGL.so");
@@ -307,9 +307,6 @@ public class JREUtils {
         return "libgl4es_114.so";
     }
 
-    public static native long getEGLContextPtr();
-    public static native long getEGLDisplayPtr();
-    public static native long getEGLConfigPtr();
     public static native int chdir(String path);
     public static native void logToLogger(final Logger logger);
     public static native boolean dlopen(String libPath);

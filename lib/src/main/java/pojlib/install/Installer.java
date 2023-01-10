@@ -107,7 +107,6 @@ public class Installer {
         FileUtils.writeByteArrayToFile(new File(Constants.MC_DIR + "/config/sodium-mixins.properties"), FileUtil.loadFromAssetToByte(MinecraftInstance.context, "sodium-mixins.properties"));
         FileUtils.writeByteArrayToFile(new File(Constants.MC_DIR + "/config/vivecraft-config.properties"), FileUtil.loadFromAssetToByte(MinecraftInstance.context, "vivecraft-config.properties"));
         FileUtils.writeByteArrayToFile(new File(Constants.MC_DIR + "/options.txt"), FileUtil.loadFromAssetToByte(MinecraftInstance.context, "options.txt"));
-        FileUtils.writeByteArrayToFile(new File(Constants.MC_DIR + "/servers.dat"), FileUtil.loadFromAssetToByte(MinecraftInstance.context, "servers.dat"));
 
         return new File(gameDir + "/assets").getAbsolutePath();
     }
