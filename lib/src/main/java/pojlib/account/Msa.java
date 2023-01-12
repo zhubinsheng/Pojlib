@@ -5,6 +5,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 import pojlib.util.Constants;
 
+import javax.net.ssl.HttpsURLConnection;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
@@ -12,7 +13,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
-import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
@@ -47,7 +47,7 @@ public class Msa {
         data.put("TokenType", "JWT");
 
         String req = ofJSONData(data);
-        HttpURLConnection conn = (HttpURLConnection)url.openConnection();
+        HttpsURLConnection conn = (HttpsURLConnection)url.openConnection();
         conn.setRequestProperty("Content-Type", "application/json");
         conn.setRequestMethod("POST");
         conn.setUseCaches(false);
@@ -82,7 +82,7 @@ public class Msa {
         data.put("TokenType", "JWT");
 
         String req = ofJSONData(data);
-        HttpURLConnection conn = (HttpURLConnection)url.openConnection();
+        HttpsURLConnection conn = (HttpsURLConnection)url.openConnection();
         conn.setRequestProperty("Content-Type", "application/json");
         conn.setRequestMethod("POST");
         conn.setUseCaches(false);
@@ -113,7 +113,7 @@ public class Msa {
         Map<Object, Object> data = new HashMap<>();
         data.put("identityToken", "XBL3.0 x=" + xblUhs + ";" + xblXsts);
         String req = ofJSONData(data);
-        HttpURLConnection conn = (HttpURLConnection)url.openConnection();
+        HttpsURLConnection conn = (HttpsURLConnection)url.openConnection();
         conn.setRequestProperty("Content-Type", "application/json");
         conn.setRequestProperty("Accept", "application/json");
         conn.setRequestProperty("charset", "utf-8");
@@ -146,7 +146,7 @@ public class Msa {
     private static void checkMcStore(String mcAccessToken) throws IOException, JSONException {
         URL url = new URL(Constants.MC_STORE_URL);
 
-        HttpURLConnection conn = (HttpURLConnection)url.openConnection();
+        HttpsURLConnection conn = (HttpsURLConnection)url.openConnection();
         conn.setRequestProperty("Authorization", "Bearer " + mcAccessToken);
         conn.setRequestMethod("GET");
         conn.setUseCaches(false);
@@ -164,7 +164,7 @@ public class Msa {
     private static MinecraftAccount checkMcProfile(String mcAccessToken) throws IOException, JSONException {
         URL url = new URL(Constants.MC_PROFILE_URL);
 
-        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+        HttpsURLConnection conn = (HttpsURLConnection) url.openConnection();
         conn.setRequestProperty("Authorization", "Bearer " + mcAccessToken);
         conn.setUseCaches(false);
         conn.connect();

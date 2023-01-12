@@ -1,16 +1,19 @@
 package pojlib.util;
 
+import android.annotation.SuppressLint;
 import android.content.res.AssetManager;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.io.IOUtils;
+import org.apache.http.conn.ssl.AllowAllHostnameVerifier;
 import pojlib.api.API_V1;
 import pojlib.modmanager.State;
 
+import javax.net.ssl.HttpsURLConnection;
 import java.io.*;
-import java.net.HttpURLConnection;
+import java.net.Proxy;
 import java.net.URL;
 import java.nio.file.Files;
 import java.util.ArrayList;
@@ -24,15 +27,17 @@ public class DownloadUtils {
     public static AssetManager assetManager;
 
 
+    @SuppressLint("AllowAllHostnameVerifier")
     private static void download(URL url, OutputStream os) throws IOException {
         InputStream is = null;
         try {
             // System.out.println("Connecting: " + url.toString());
-            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+            HttpsURLConnection conn = (HttpsURLConnection) url.openConnection();
+            conn.setHostnameVerifier(new AllowAllHostnameVerifier());
             conn.setConnectTimeout(10000);
             conn.setDoInput(true);
             conn.connect();
-            if (conn.getResponseCode() != HttpURLConnection.HTTP_OK) {
+            if (conn.getResponseCode() != HttpsURLConnection.HTTP_OK) {
                 is = conn.getInputStream();
             }
 
