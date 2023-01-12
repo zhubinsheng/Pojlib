@@ -3,6 +3,7 @@ package pojlib.install;
 import android.app.Activity;
 import android.content.Context;
 
+import android.provider.Telephony;
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -19,6 +20,10 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Map;
 import java.util.StringJoiner;
+import java.util.concurrent.Executors;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 //This class reads data from a game version json and downloads its contents.
 //This works for the base game as well as mod loaders
@@ -88,27 +93,63 @@ public class Installer {
     //Will only download asset if it is missing
     public static String installAssets(VersionInfo minecraftVersionInfo, String gameDir) throws IOException {
         Logger.getInstance().appendToLog("Downloading assets");
-
         JsonObject assets = APIHandler.getFullUrl(minecraftVersionInfo.assetIndex.url, JsonObject.class);
 
+        ThreadPoolExecutor tp = new ThreadPoolExecutor(5, 5, 100, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<>());
+
         for (Map.Entry<String, JsonElement> entry : assets.getAsJsonObject("objects").entrySet()) {
-            VersionInfo.Asset asset = new Gson().fromJson(entry.getValue(), VersionInfo.Asset.class);
-            String path = asset.hash.substring(0, 2) + "/" + asset.hash;
-            File assetFile = new File(gameDir + "/assets/objects/", path);
-            if (!assetFile.exists()) {
-                Logger.getInstance().appendToLog("Downloading: " + entry.getKey());
-                DownloadUtils.downloadFile(Constants.MOJANG_RESOURCES_URL + "/" + path, assetFile);
-            }
+            AsyncDownload thread = new AsyncDownload(entry, minecraftVersionInfo, gameDir);
+            tp.execute(thread);
         }
+
+        tp.shutdown();
+        try {
+            while (!tp.awaitTermination(100, TimeUnit.MILLISECONDS));
+        } catch (InterruptedException e) {}
 
         DownloadUtils.downloadFile(minecraftVersionInfo.assetIndex.url, new File(gameDir + "/assets/indexes/" + minecraftVersionInfo.assets + ".json"));
 
         FileUtils.writeByteArrayToFile(new File(Constants.MC_DIR + "/config/sodium-extra.properties"), FileUtil.loadFromAssetToByte(MinecraftInstance.context, "sodium-extra.properties"));
         FileUtils.writeByteArrayToFile(new File(Constants.MC_DIR + "/config/sodium-mixins.properties"), FileUtil.loadFromAssetToByte(MinecraftInstance.context, "sodium-mixins.properties"));
+        FileUtils.writeByteArrayToFile(new File(Constants.MC_DIR + "/config/sodium-options.json"), FileUtil.loadFromAssetToByte(MinecraftInstance.context, "sodium-options.json"));
         FileUtils.writeByteArrayToFile(new File(Constants.MC_DIR + "/config/vivecraft-config.properties"), FileUtil.loadFromAssetToByte(MinecraftInstance.context, "vivecraft-config.properties"));
+        FileUtils.writeByteArrayToFile(new File(Constants.MC_DIR + "/config/tweakeroo.json"), FileUtil.loadFromAssetToByte(MinecraftInstance.context, "tweakeroo.json"));
+        FileUtils.writeByteArrayToFile(new File(Constants.MC_DIR + "/config/smoothboot.json"), FileUtil.loadFromAssetToByte(MinecraftInstance.context, "smoothboot.json"));
+        FileUtils.writeByteArrayToFile(new File(Constants.MC_DIR + "/config/malilib.json"), FileUtil.loadFromAssetToByte(MinecraftInstance.context, "malilib.json"));
+        FileUtils.writeByteArrayToFile(new File(Constants.MC_DIR + "/config/immediatelyfast.json"), FileUtil.loadFromAssetToByte(MinecraftInstance.context, "immediatelyfast.json"));
+        FileUtils.writeByteArrayToFile(new File(Constants.MC_DIR + "/config/c2me.toml"), FileUtil.loadFromAssetToByte(MinecraftInstance.context, "c2me.toml"));
+        FileUtils.writeByteArrayToFile(new File(Constants.MC_DIR + "/config/moreculling.toml"), FileUtil.loadFromAssetToByte(MinecraftInstance.context, "moreculling.toml"));
         FileUtils.writeByteArrayToFile(new File(Constants.MC_DIR + "/options.txt"), FileUtil.loadFromAssetToByte(MinecraftInstance.context, "options.txt"));
+        FileUtils.writeByteArrayToFile(new File(Constants.MC_DIR + "/optionsviveprofiles.txt"), FileUtil.loadFromAssetToByte(MinecraftInstance.context, "optionsviveprofiles.txt"));
 
         return new File(gameDir + "/assets").getAbsolutePath();
+    }
+
+    public static class AsyncDownload implements Runnable {
+        Map.Entry<String, JsonElement> entry;
+        VersionInfo versionInfo;
+        String gameDir;
+
+        public void run() {
+            VersionInfo.Asset asset = new Gson().fromJson(entry.getValue(), VersionInfo.Asset.class);
+            String path = asset.hash.substring(0, 2) + "/" + asset.hash;
+            File assetFile = new File(gameDir + "/assets/objects/", path);
+
+            if (!assetFile.exists()) {
+                    Logger.getInstance().appendToLog("Downloading: " + entry.getKey());
+                try {
+                    DownloadUtils.downloadFile(Constants.MOJANG_RESOURCES_URL + "/" + path, assetFile);
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        }
+
+        public AsyncDownload( Map.Entry<String, JsonElement> entry, VersionInfo versionInfo, String gameDir) {
+            this.entry = entry;
+            this.versionInfo = versionInfo;
+            this.gameDir = gameDir;
+        }
     }
 
     public static String installLwjgl(Activity activity) throws IOException {
