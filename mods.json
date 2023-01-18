@@ -2,8 +2,8 @@
 	"1.19.3": [
 		{
 			"slug": "vivecraft",
-			"version": "1.4.0",
-			"download_link": "https://github.com/QuestCraftPlusPlus/VivecraftMod/releases/download/1.4-1.19.3/vivecraft.jar"
+			"version": "1.1.0",
+			"download_link": "https://github.com/QuestCraftPlusPlus/VivecraftMod/releases/download/v1.1-1.19.3-YVR/vivecraft.jar"
 		},
 		{
 			"slug": "fabric-api",
@@ -95,8 +95,8 @@
 	"1.18.2": [
 		{
 			"slug": "vivecraft",
-			"version": "1.4.0",
-			"download_link": "https://github.com/QuestCraftPlusPlus/VivecraftMod/releases/download/1.4-1.18.2/vivecraft.jar"
+			"version": "1.1.0",
+			"download_link": "https://github.com/QuestCraftPlusPlus/VivecraftMod/releases/download/v1.1-1.18.2-YVR/vivecraft.jar"
 		},
 		{
 			"slug": "fabric-api",
