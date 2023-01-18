@@ -271,21 +271,6 @@ void pojavMakeCurrent(void* window) {
     }
 }
 
-JNIEXPORT JNICALL jlong
-Java_pojlib_util_JREUtils_getEGLDisplayPtr(JNIEnv *env, jclass clazz) {
-    return (jlong) &eglDisplay;
-}
-
-JNIEXPORT JNICALL jlong
-Java_pojlib_util_JREUtils_getEGLContextPtr(JNIEnv *env, jclass clazz) {
-    return (jlong) &eglContext;
-}
-
-JNIEXPORT JNICALL jlong
-Java_pojlib_util_JREUtils_getEGLConfigPtr(JNIEnv *env, jclass clazz) {
-    return (jlong) &config;
-}
-
 /*
 JNIEXPORT void JNICALL
 Java_org_lwjgl_glfw_GLFW_nativeEglDetachOnCurrentThread(JNIEnv *env, jclass clazz) {

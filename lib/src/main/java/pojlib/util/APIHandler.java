@@ -4,8 +4,8 @@ import android.os.Build;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 
+import javax.net.ssl.HttpsURLConnection;
 import java.io.*;
-import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
@@ -37,7 +37,7 @@ public class APIHandler {
     //Make a get request and return the response as a raw string;
     public static String getRaw(String url) {
         try {
-            HttpURLConnection conn = (HttpURLConnection) new URL(url).openConnection();
+            HttpsURLConnection conn = (HttpsURLConnection) new URL(url).openConnection();
             InputStream inputStream = conn.getInputStream();
             String data = new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8)).lines().collect(Collectors.joining("\n"));
             inputStream.close();
@@ -51,7 +51,7 @@ public class APIHandler {
 
     public static String postRaw(String url, String body) {
         try {
-            HttpURLConnection conn = (HttpURLConnection) new URL(url).openConnection();
+            HttpsURLConnection conn = (HttpsURLConnection) new URL(url).openConnection();
             conn.setRequestMethod("POST");
             conn.setRequestProperty("Content-Type", "application/json");
             conn.setRequestProperty("Accept", "application/json");

@@ -31,7 +31,7 @@ import java.util.Objects;
 
 public class MinecraftInstance {
 
-    public static final String MODS = "https://raw.githubusercontent.com/QuestCraftPlusPlus/Pojlib/QuestCraft/mods.json";
+    public static final String MODS = "https://raw.githubusercontent.com/QuestCraftPlusPlus/Pojlib/YVRCraft/mods.json";
     public static Activity context;
     public String versionName;
     public String versionType;
@@ -181,7 +181,6 @@ public class MinecraftInstance {
             updateOrDownloadsMods();
             JREUtils.redirectAndPrintJRELog();
             VLoader.setAndroidInitInfo(context);
-            VLoader.setEGLGlobal(JREUtils.getEGLContextPtr(), JREUtils.getEGLDisplayPtr(), JREUtils.getEGLConfigPtr());
             JREUtils.launchJavaVM(activity, generateLaunchArgs(account), versionName);
         } catch (Throwable e) {
             e.printStackTrace();
