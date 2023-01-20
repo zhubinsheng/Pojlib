@@ -149,9 +149,10 @@ public class API_V1 {
                 connection.setDoOutput(true);
                 connection.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
 
-                String query = String.format("client_id=%s&scope=%s",
+                String query = String.format("client_id=%s&scope=%s&mkt=%s",
                         URLEncoder.encode(client_id, "UTF-8"),
-                        URLEncoder.encode("XboxLive.signin Xboxlive.offline_access", "UTF-8"));
+                        URLEncoder.encode("XboxLive.signin Xboxlive.offline_access", "UTF-8"),
+                        URLEncoder.encode("zh-CN", "UTF-8"));
                 try (OutputStream output = connection.getOutputStream()) {
                     output.write(query.getBytes(StandardCharsets.UTF_8));
                 }
