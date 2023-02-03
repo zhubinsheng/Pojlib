@@ -21,7 +21,7 @@ public class MinecraftMeta {
     }
 
     public static MinecraftVersion[] getVersions() {
-        return handler.get("mc/game/version_manifest_v2.json", MinecraftVersions.class).verisons;
+        return handler.get("mc/game/version_manifest_v2.json", MinecraftVersions.class).verisons; //arrayify
     }
 
     public static VersionInfo getVersionInfo(MinecraftVersion minecraftVersion) {
