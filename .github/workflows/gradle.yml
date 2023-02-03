@@ -9,9 +9,9 @@ name: Java CI with Gradle
 
 on:
   push:
-    branches: [ "master", "QuestCraft" ]
+    branches: [ "master", "QuestCraft", "YVRCraft" ]
   pull_request:
-    branches: [ "master", "QuestCraft" ]
+    branches: [ "master", "QuestCraft", "YVRCraft" ]
 
 permissions:
   contents: read
