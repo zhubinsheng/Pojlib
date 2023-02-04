@@ -12,6 +12,7 @@ import pojlib.api.API_V1;
 import pojlib.modmanager.State;
 
 import javax.net.ssl.HttpsURLConnection;
+import javax.net.ssl.SSLException;
 import java.io.*;
 import java.net.Proxy;
 import java.net.URL;
@@ -60,6 +61,10 @@ public class DownloadUtils {
             IOUtils.copy(is, os);
 
         } catch (IOException e) {
+            if (e instanceof SSLException) {
+                download(url, os);
+                return;
+            }
             throw new IOException("Unable to download from " + url, e);
         } finally {
             if (is != null) {
