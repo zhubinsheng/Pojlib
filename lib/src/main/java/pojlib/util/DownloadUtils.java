@@ -13,6 +13,7 @@ import pojlib.modmanager.State;
 
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLException;
+import javax.net.ssl.SSLHandshakeException;
 import java.io.*;
 import java.net.Proxy;
 import java.net.URL;
@@ -61,7 +62,7 @@ public class DownloadUtils {
             IOUtils.copy(is, os);
 
         } catch (IOException e) {
-            if (e instanceof SSLException) {
+            if (e instanceof SSLHandshakeException) {
                 download(url, os);
                 return;
             }
