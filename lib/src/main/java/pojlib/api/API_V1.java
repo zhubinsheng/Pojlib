@@ -194,7 +194,7 @@ public class API_V1 {
 
                 if(jsonObject2.get("access_token") != null) {
                     // Finally, log in
-                    acc = MinecraftAccount.login(MinecraftInstance.context.getFilesDir() + "/accounts", jsonObject2);
+                    acc = MinecraftAccount.login(Constants.MC_DIR + "/accounts", jsonObject2);
                     profileImage = MinecraftAccount.getSkinFaceUrl(acc);
                     return acc;
                 }
