@@ -10,12 +10,27 @@
 #include <jni.h>
 #include "log.h"
 #include <GLES3/gl32.h>
+#include <GLES2/gl2ext.h>
+#include <EGL/egl.h>
+#include <EGL/eglext.h>
+#include <dlfcn.h>
+#include <vulkan/vulkan.h>
+#include <android/hardware_buffer.h>
 
 static JavaVM* jvm;
 XrInstanceCreateInfoAndroidKHR* OpenComposite_Android_Create_Info;
 XrGraphicsBindingOpenGLESAndroidKHR* OpenComposite_Android_GLES_Binding_Info;
 
 std::string (*OpenComposite_Android_Load_Input_File)(const char *path);
+
+PFN_vkVoidFunction (*vkGetDeviceProcAddr_p) (
+        VkDevice                                    device,
+        const char*                                 pName);
+
+VkResult (*vkGetMemoryAndroidHardwareBufferANDROID_p) (
+        VkDevice                                    device,
+        const VkMemoryGetAndroidHardwareBufferInfoANDROID* pInfo,
+        struct AHardwareBuffer**                    pBuffer);
 
 static std::string load_file(const char *path);
 
@@ -74,23 +89,34 @@ Java_pojlib_util_VLoader_setEGLGlobal(JNIEnv* env, jclass clazz, jlong ctx, jlon
 
 extern "C"
 JNIEXPORT jint JNICALL
-Java_org_vivecraft_utils_VLoader_createGLImage(JNIEnv* env, jclass clazz, jint width, jint height) {
+Java_org_vivecraft_utils_VLoader_createGLImage(JNIEnv* env, jclass clazz, jlong device, jlong memory) {
     GLint image;
     glGenTextures(1, reinterpret_cast<GLuint *>(&image));
     glBindTexture(GL_TEXTURE_2D, image);
     glTexParameterf(GL_TEXTURE_2D , GL_TEXTURE_MIN_FILTER, 9729.0F);
     glTexParameterf(GL_TEXTURE_2D , GL_TEXTURE_MAG_FILTER, 9729.0F);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+
+    *(void **)(&vkGetDeviceProcAddr_p)  = dlsym(getenv("VULKAN_PTR"), "vkGetDeviceProcAddr");
+
+    printf("Vulkan PTR: %p.\n", vkGetDeviceProcAddr_p);
+
+    vkGetMemoryAndroidHardwareBufferANDROID_p = reinterpret_cast<VkResult (*)(VkDevice,
+                                                                              const VkMemoryGetAndroidHardwareBufferInfoANDROID *,
+                                                                              AHardwareBuffer **)>(vkGetDeviceProcAddr_p(
+            reinterpret_cast<VkDevice>(device), "vkGetMemoryAndroidHardwareBufferANDROID"));
+
+    AHardwareBuffer* hardwareBuffer;
+    VkMemoryGetAndroidHardwareBufferInfoANDROID info;
+    info.sType = VK_STRUCTURE_TYPE_MEMORY_GET_ANDROID_HARDWARE_BUFFER_INFO_ANDROID;
+    info.memory = reinterpret_cast<VkDeviceMemory>(memory);
+
+    vkGetMemoryAndroidHardwareBufferANDROID_p(reinterpret_cast<VkDevice>(device), &info, &hardwareBuffer);
+    EGLClientBuffer buffer = eglGetNativeClientBufferANDROID(hardwareBuffer);
+    EGLImage eglImage = eglCreateImage(eglGetCurrentDisplay(), nullptr, EGL_NATIVE_BUFFER_ANDROID, buffer,
+                   nullptr);
+    glEGLImageTargetTexture2DOES(GL_TEXTURE_2D, eglImage);
 
     return image;
-}
-
-extern "C"
-JNIEXPORT void JNICALL
-Java_org_vivecraft_utils_VLoader_writeImage(JNIEnv* env, jclass clazz, jint tex, jint width, jint height, jlong byteBuf) {
-    void* pixels = reinterpret_cast<void *>(byteBuf);
-    glBindTexture(GL_TEXTURE_2D, tex);
-    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
 }
 
 static std::string load_file(const char *path) {

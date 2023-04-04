@@ -725,9 +725,10 @@ int pojavInit() {
     xrEglInit();
 
     char *natives = getenv("POJAV_NATIVEDIR");
-    char *gpuStuff = getenv("HOME");
+    char *gpuStuff;
     strcat(natives, "/");
-    strcat(gpuStuff, "/gpu_stuff/");
+    asprintf(&gpuStuff, "%s%s", getenv("HOME"), "/gpu-stuff/");
+    printf("Gpu stuff: %s.\n", gpuStuff);
     void *libvulkan = adrenotools_open_libvulkan(RTLD_NOW, ADRENOTOOLS_DRIVER_CUSTOM, NULL,
                                                  gpuStuff, natives,
                                                  "libvulkan_freedreno.so", NULL, NULL);
@@ -735,7 +736,6 @@ int pojavInit() {
     printf("libvulkan: %p\n", libvulkan);
     char *vulkanPtrString;
     asprintf(&vulkanPtrString, "%p", libvulkan);
-    printf("%s\n", vulkanPtrString);
     setenv("VULKAN_PTR", vulkanPtrString, 1);
 
     setenv("GALLIUM_DRIVER", "zink", 1);
