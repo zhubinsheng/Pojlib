@@ -132,6 +132,10 @@ public class MinecraftInstance {
                 boolean downloadAll = !(new File(Constants.MC_DIR + "/mods/" + this.versionName).exists());
                 for (String download : downloads) {
                     if(!Objects.equals(versions.get(i), ((JsonObject) objOld.getAsJsonArray(versionName).get(i)).getAsJsonPrimitive("version").getAsString()) || downloadAll) {
+                        File file = new File(Constants.MC_DIR + "/mods/" + this.versionName + "/" + name.get(i) + ".jar");
+                        if(file.exists()) {
+                            file.delete();
+                        }
                         DownloadUtils.downloadFile(download, new File(Constants.MC_DIR + "/mods/" + this.versionName + "/" + name.get(i) + ".jar"));
                     }
                     i++;
