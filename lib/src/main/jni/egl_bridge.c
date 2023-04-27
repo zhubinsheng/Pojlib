@@ -722,7 +722,7 @@ int pojavInit() {
     savedWidth = 1080;
     savedHeight = 720;
 
-    xrEglInit();
+    // xrEglInit();
 
     char *natives = getenv("POJAV_NATIVEDIR");
     char *gpuStuff = getenv("HOME");

@@ -9,8 +9,10 @@
 #include <OpenOVR/openxr_platform.h>
 #include <jni.h>
 #include "log.h"
+#include <vector>
 #include <GLES3/gl32.h>
 #include <vulkan/vulkan.h>
+#include <vulkan/vulkan_android.h>
 
 static JavaVM* jvm;
 XrInstanceCreateInfoAndroidKHR* OpenComposite_Android_Create_Info;
@@ -68,49 +70,16 @@ Java_pojlib_util_VLoader_setAndroidInitInfo(JNIEnv *env, jclass clazz, jobject c
 
 void check_vulkan(VkResult res, const char* func) {
     if(res != VK_SUCCESS) {
-        printf("Result for %s was %d!", func, res);
+        printf("Result for %s was %d!\n", func, res);
     }
 }
 
-extern "C"
-JNIEXPORT void JNICALL
-Java_org_vivecraft_utils_VLoader_initVulkan(JNIEnv* env, jclass clazz) {
-    VkApplicationInfo appInfo = {
-            .sType = VK_STRUCTURE_TYPE_APPLICATION_INFO,
-            .pNext = nullptr,
-            .pApplicationName = "QuestCraft",
-            .applicationVersion = VK_MAKE_VERSION(4, 0, 0),
-            .pEngineName = "None",
-            .engineVersion = VK_MAKE_VERSION(1, 0, 0),
-            .apiVersion = VK_VERSION_1_1
-    };
-
-    const char* extensions = {
-            VK_KHR_EXTERNAL_MEMORY_CAPABILITIES_EXTENSION_NAME
-    };
-    VkInstanceCreateInfo info = {
-            .sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
-            .pNext = nullptr,
-            .pApplicationInfo = &appInfo,
-            .enabledLayerCount = 0,
-            .ppEnabledLayerNames = nullptr,
-            .enabledExtensionCount = 1,
-            .ppEnabledExtensionNames = &extensions
-    };
-
-    check_vulkan(vkCreateInstance(&info, nullptr, &inst), "vkCreateInstance");
-
-    uint32_t count;
-    check_vulkan(vkEnumeratePhysicalDevices(inst, &count, nullptr), "vkEnumeratePhysicalDevices");
-    VkPhysicalDevice devices[count];
-    check_vulkan(vkEnumeratePhysicalDevices(inst, &count, devices), "vkEnumeratePhysicalDevices");
-    pdev = devices[0];
-
+void find_queue_families() {
     uint32_t queueFamilyCount = 0;
     vkGetPhysicalDeviceQueueFamilyProperties(pdev, &queueFamilyCount, nullptr);
 
-    VkQueueFamilyProperties properties[queueFamilyCount];
-    vkGetPhysicalDeviceQueueFamilyProperties(pdev, &queueFamilyCount, properties);
+    std::vector<VkQueueFamilyProperties> properties(queueFamilyCount);
+    vkGetPhysicalDeviceQueueFamilyProperties(pdev, &queueFamilyCount, properties.data());
 
     int i = 0;
     for (const auto& queueFamily : properties) {
@@ -120,23 +89,117 @@ Java_org_vivecraft_utils_VLoader_initVulkan(JNIEnv* env, jclass clazz) {
 
         i++;
     }
+    printf("Failed to find queue family!\n");
+}
 
-    extensions = {
-            VK_KHR_EXTERNAL_MEMORY_EXTENSION_NAME
-            VK_KHR_EXTERNAL_MEMORY_FD_EXTENSION_NAME
+VKAPI_ATTR VkBool32 VKAPI_CALL DebugUtilsMessenger(
+        VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
+        VkDebugUtilsMessageTypeFlagsEXT messageTypes,
+        const VkDebugUtilsMessengerCallbackDataEXT *callbackData,
+        void *userData) {
+    const char validation[]  = "Validation";
+    const char performance[] = "Performance";
+    const char error[]       = "ERROR";
+    const char warning[]     = "WARNING";
+    const char unknownType[] = "UNKNOWN_TYPE";
+    const char unknownSeverity[] = "UNKNOWN_SEVERITY";
+    const char* typeString      = unknownType;
+    const char* severityString  = unknownSeverity;
+    const char* messageIdName   = callbackData->pMessageIdName;
+    int32_t messageIdNumber     = callbackData->messageIdNumber;
+    const char* message         = callbackData->pMessage;
+    android_LogPriority priority = ANDROID_LOG_UNKNOWN;
+
+    if (messageSeverity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT) {
+        severityString = error;
+        priority = ANDROID_LOG_ERROR;
+    }
+    else if (messageSeverity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT) {
+        severityString = warning;
+        priority = ANDROID_LOG_WARN;
+    }
+    if (messageTypes & VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT) {
+        typeString = validation;
+    }
+    else if (messageTypes & VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT) {
+        typeString = performance;
+    }
+
+    printf("%s %s: [%s] Code %i : %s", typeString, severityString, messageIdName, messageIdNumber, message);
+
+    return VK_FALSE;
+}
+
+extern "C"
+JNIEXPORT void JNICALL
+Java_org_vivecraft_utils_VLoader_initVulkan(JNIEnv* env, jclass clazz) {
+    VkApplicationInfo appInfo;
+    appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
+    appInfo.pNext = nullptr;
+    appInfo.pApplicationName = "QuestCraft";
+    appInfo.applicationVersion = VK_MAKE_VERSION(4, 0, 0);
+    appInfo.pEngineName = "None";
+    appInfo.engineVersion = VK_MAKE_VERSION(0, 0, 1);
+    appInfo.apiVersion = VK_VERSION_1_1;
+
+    std::vector<const char*> instExtensions = {
+            VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME,
+            VK_KHR_EXTERNAL_MEMORY_CAPABILITIES_EXTENSION_NAME,
+            VK_KHR_SURFACE_EXTENSION_NAME,
+            VK_KHR_ANDROID_SURFACE_EXTENSION_NAME
     };
-    VkDeviceCreateInfo deviceCreateInfo = {
-            .sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
-            .pNext = nullptr,
-            .flags = 0,
-            .enabledLayerCount = 0,
-            .ppEnabledLayerNames = nullptr,
-            .enabledExtensionCount = 2,
-            .ppEnabledExtensionNames = &extensions
+    VkInstanceCreateInfo info;
+    info.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
+    info.pNext = nullptr;
+    info.flags = 0;
+    info.pApplicationInfo = &appInfo;
+    info.enabledLayerCount = 0;
+    info.enabledExtensionCount = static_cast<uint32_t>(instExtensions.size());
+    info.ppEnabledExtensionNames = instExtensions.data();
+
+    check_vulkan(vkCreateInstance(&info, nullptr, &inst), "vkCreateInstance");
+
+    uint32_t count;
+    check_vulkan(vkEnumeratePhysicalDevices(inst, &count, nullptr), "vkEnumeratePhysicalDevices");
+    std::vector<VkPhysicalDevice> devices(count);
+    check_vulkan(vkEnumeratePhysicalDevices(inst, &count, devices.data()), "vkEnumeratePhysicalDevices");
+    for(const auto& device : devices) {
+        pdev = device;
+        break;
+    }
+
+    find_queue_families();
+
+    float priorities = 1.0F;
+    std::vector<const char*> extensions = {
+            VK_KHR_EXTERNAL_MEMORY_EXTENSION_NAME,
+            VK_KHR_EXTERNAL_MEMORY_FD_EXTENSION_NAME,
+            VK_KHR_GET_MEMORY_REQUIREMENTS_2_EXTENSION_NAME,
+            VK_KHR_SWAPCHAIN_EXTENSION_NAME
     };
+    VkDeviceQueueCreateInfo queueCreateInfo{};
+    queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+    queueCreateInfo.flags = 0;
+    queueCreateInfo.queueFamilyIndex = static_cast<uint32_t>(graphicsFamily);
+    queueCreateInfo.queueCount = 1;
+    queueCreateInfo.pQueuePriorities = &priorities;
+
+    VkPhysicalDeviceFeatures features{};
+    VkDeviceCreateInfo deviceCreateInfo;
+    deviceCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+    deviceCreateInfo.pNext = nullptr;
+    deviceCreateInfo.flags = 0;
+    deviceCreateInfo.queueCreateInfoCount = 1;
+    deviceCreateInfo.pQueueCreateInfos = &queueCreateInfo;
+    deviceCreateInfo.enabledLayerCount = 0;
+    deviceCreateInfo.enabledExtensionCount = extensions.size();
+    deviceCreateInfo.ppEnabledExtensionNames = extensions.data();
+    deviceCreateInfo.pEnabledFeatures = &features;
     check_vulkan(vkCreateDevice(pdev, &deviceCreateInfo, nullptr, &dev), "vkCreateDevice");
 
-    vkGetDeviceQueue(dev, graphicsFamily, 0, &graphicsQueue);
+    auto vkGetDeviceQueue_p = reinterpret_cast<PFN_vkGetDeviceQueue>(vkGetDeviceProcAddr(
+            dev, "vkGetDeviceQueue"));
+    vkGetDeviceQueue_p(dev, graphicsFamily, 0, &graphicsQueue);
 }
 
 extern "C"
@@ -210,7 +273,8 @@ Java_org_vivecraft_utils_VLoader_createImage(JNIEnv* env, jclass clazz, jint wid
             .usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
             .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
             .queueFamilyIndexCount = 0,
-            .pQueueFamilyIndices = nullptr
+            .pQueueFamilyIndices = nullptr,
+            .initialLayout = VK_IMAGE_LAYOUT_UNDEFINED
     };
     VkImage image;
     check_vulkan(vkCreateImage(dev, &imageInfo, nullptr, &image), "vkCreateImage");
@@ -218,13 +282,21 @@ Java_org_vivecraft_utils_VLoader_createImage(JNIEnv* env, jclass clazz, jint wid
     VkMemoryRequirements memRequirements;
     vkGetImageMemoryRequirements(dev, image, &memRequirements);
 
+    VkExportMemoryAllocateInfo expAlloc{};
+    expAlloc.sType = VK_STRUCTURE_TYPE_EXPORT_MEMORY_ALLOCATE_INFO;
+    expAlloc.handleTypes = VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT;
+    expAlloc.pNext = nullptr;
+
     VkMemoryAllocateInfo allocInfo{};
     allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+    allocInfo.pNext = &expAlloc;
     allocInfo.allocationSize = memRequirements.size;
     allocInfo.memoryTypeIndex = findMemoryType(memRequirements.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
     VkDeviceMemory deviceMemory;
     check_vulkan(vkAllocateMemory(dev, &allocInfo, nullptr, &deviceMemory), "vkAllocateMemory");
+
+    check_vulkan(vkBindImageMemory(dev, image, deviceMemory, 0), "vkBindImageMemory");
 
     int* memory = reinterpret_cast<int *>(fd);
     VkMemoryGetFdInfoKHR fdInfo = {
