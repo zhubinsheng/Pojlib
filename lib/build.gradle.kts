@@ -7,7 +7,7 @@ android {
     ndkVersion = "25.2.9519653"
     compileSdkVersion = "android-32"
     defaultConfig {
-        minSdkVersion(32)
+        minSdkVersion(29)
     }
 
     buildTypes {
@@ -26,6 +26,7 @@ android {
     }
 
     buildToolsVersion = "30.0.3"
+
 }
 
 dependencies {
