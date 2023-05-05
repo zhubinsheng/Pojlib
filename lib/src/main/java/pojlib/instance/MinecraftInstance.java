@@ -214,9 +214,24 @@ public class MinecraftInstance {
 
                 instance.mods = infos;
                 GsonUtils.objectToJsonFile(customMods.getPath(), mods);
-                break;
+                return;
             }
         }
+
+        // If instance does not exist in file, create it
+        ArrayList<CustomMods.InstanceMods> instanceInfo = new ArrayList<>(Arrays.asList(mods.instances));
+        CustomMods.InstanceMods instMods = new CustomMods.InstanceMods();
+        instMods.version = this.versionName;
+        instMods.mods = new CustomMods.ModInfo[1];
+        instMods.mods[0] = new CustomMods.ModInfo();
+        instMods.mods[0].name = name;
+        instMods.mods[0].version = version;
+        instMods.mods[0].url = url;
+        instanceInfo.add(instanceInfo.size(), instMods);
+
+        // Set the array
+        mods.instances = instanceInfo.toArray(new CustomMods.InstanceMods[0]);
+        GsonUtils.objectToJsonFile(customMods.getAbsolutePath(), mods);
     }
 
     public boolean hasCustomMod(String name) {
@@ -229,6 +244,18 @@ public class MinecraftInstance {
         for(CustomMods.InstanceMods instance : mods.instances) {
             if(instance.version.equals(this.versionName)) {
                 for (CustomMods.ModInfo info : instance.mods) {
+                    // Check if core mod is already included
+                    File modsOld = new File(Constants.USER_HOME + "/mods.json");
+                    if(modsOld.exists()) {
+                        JsonObject objOld = GsonUtils.jsonFileToObject(modsOld.getAbsolutePath(), JsonObject.class);
+                        for (JsonElement verMod : objOld.getAsJsonArray(this.versionName)) {
+                            JsonObject object = verMod.getAsJsonObject();
+                            String slug = object.get("slug").getAsString().replace("-", " ");
+                            if(name.equals(slug)) {
+                                return true;
+                            }
+                        }
+                    }
                     if(info.name.equals(name)) {
                         return true;
                     }
@@ -243,6 +270,19 @@ public class MinecraftInstance {
         File customMods = new File(Constants.MC_DIR, CUSTOM_MODS);
         if(!customMods.exists()) {
             return false;
+        }
+
+        // Check if core mod is already included, if so, don't delete
+        File modsOld = new File(Constants.USER_HOME + "/mods.json");
+        if(modsOld.exists()) {
+            JsonObject objOld = GsonUtils.jsonFileToObject(modsOld.getAbsolutePath(), JsonObject.class);
+            for (JsonElement verMod : objOld.getAsJsonArray(this.versionName)) {
+                JsonObject object = verMod.getAsJsonObject();
+                String slug = object.get("slug").getAsString().replace("-", " ");
+                if(name.equals(slug)) {
+                    return false;
+                }
+            }
         }
 
         CustomMods mods = GsonUtils.jsonFileToObject(customMods.getAbsolutePath(), CustomMods.class);
