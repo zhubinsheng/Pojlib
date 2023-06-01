@@ -19,10 +19,9 @@ std::string (*OpenComposite_Android_Load_Input_File)(const char *path);
 
 static std::string load_file(const char *path);
 
+extern "C"
 jint JNI_OnLoad(JavaVM* vm, void* reserved) {
-    if (jvm == nullptr) {
-        jvm = vm;
-    }
+    jvm = vm;
     return JNI_VERSION_1_4;
 }
 
@@ -31,7 +30,6 @@ JNIEXPORT void JNICALL
 Java_pojlib_util_VLoader_setAndroidInitInfo(JNIEnv *env, jclass clazz, jobject ctx) {
     OpenComposite_Android_Load_Input_File = load_file;
 
-    env->GetJavaVM(&jvm);
     ctx = env->NewGlobalRef(ctx);
     OpenComposite_Android_Create_Info = new XrInstanceCreateInfoAndroidKHR{
             XR_TYPE_INSTANCE_CREATE_INFO_ANDROID_KHR,

@@ -306,14 +306,16 @@ public class MinecraftInstance {
     }
 
     public void launchInstance(Activity activity, MinecraftAccount account) {
-        try {
-            updateOrDownloadsMods();
-            JREUtils.redirectAndPrintJRELog();
+        updateOrDownloadsMods();
+        JREUtils.redirectAndPrintJRELog();
+        activity.getMainExecutor().execute(() -> {
             VLoader.setAndroidInitInfo(activity);
             VLoader.setEGLGlobal(JREUtils.getEGLContextPtr(), JREUtils.getEGLDisplayPtr(), JREUtils.getEGLConfigPtr());
-            JREUtils.launchJavaVM(activity, generateLaunchArgs(account), versionName);
-        } catch (Throwable e) {
-            e.printStackTrace();
-        }
+            try {
+                JREUtils.launchJavaVM(activity, generateLaunchArgs(account), versionName);
+            } catch (Throwable e) {
+                e.printStackTrace();
+            }
+        });
     }
 }
